@@ -1,0 +1,426 @@
+#author Kevin Mato K5529
+
+
+#EDAMI 2019Z Lab6
+#Clustering
+install.packages("fossil")
+#Libraries
+library(dbscan)
+library(fpc)
+library(cluster)
+library(factoextra)
+library(fossil)
+
+#calculation of accuracy
+accuracyCalc <- function(confTbl, startCol)
+{
+  corr = 0;
+  for(i in startCol:ncol(confTbl))
+  {
+    corr = corr + max(confTbl[,i])  
+  }
+  accuracy = corr/sum(confTbl)
+  accuracy  
+}
+
+#wines
+download.file('http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv', 'wine_red.csv');
+wineRed_ds = read.table("wine_red.csv", header = TRUE, sep=";", na.strings= "*")
+View(wineRed_ds)
+wineRed_dsC <- wineRed_ds[,-12]
+View(wineRed_dsC)
+
+set.seed(7777)
+summary(wineRed_dsC)
+
+################################################################################################################
+#               AIM OF THE EXPERIMENTS
+# The aim of the laboratory is to find the best clustering for the wine dataset.
+# This will involve finding the best clustering algorithm, and the best parameters 
+# to find the best clustering.
+
+
+# The dataset of interest is the red wine dataset, composed by 11 columns indicating
+# the chemical substances with their level of presence; we will ignore the column related 
+# to the quality for the first part of the clustering but it will be used for the evaluation
+# of the results.
+# The evaluation of each experiment will be carried by checking the values of accuracy and rand index 
+# (where possible) for each clustering.
+# Depending on the case I will also use the silouhette measure.
+
+# These measurements will give us an insight on the quality of the algorithm and combination
+# of parameters.
+# The quality measurements will be also used for comparison between our solutions and the refence solution.
+# The best clustering method (algorithm and params) will be selected among those experiments who have maximum accuracy, rand index and silouhette.
+
+# POTENTIAL PRACTICAL APPLICATION:
+# On a simple plan clustering could help us understand and develop our tastes regarding to wine.
+# We can use the results of the clustering of the wine dataset to define a new variety of wines based
+# just on their chemical composition. It could be strategically efficient marketizing the products
+# in a number of families of products, that can be mapped to the customer segmentation.
+#
+
+
+#Refence of quality - wines
+distC = dist(wineRed_dsC)
+?kmeans
+
+wmeans = kmeans(distC,6)
+res3 = table(wineRed_ds$quality,wmeans$cluster )
+res3
+# 
+#     1   2   3   4   5   6
+# 3   3   0   0   1   6   0
+# 4   8   7   5  12  21   0
+# 5 109 113 118 146 136  59
+# 6 147 103  41 183 158   6
+# 7  42  12  13  53  77   2
+# 8   2   1   2   4   9   0
+accuracyCalc(res3,1)
+#0.4865541
+
+print(wmeans)
+# 6 clusters of sizes 179, 399, 311, 407, 236, 67
+# Within cluster sum of squares by cluster:
+# 27310865 12515492 14155186  9787701 18748436 80687740
+# (between_SS / total_SS =  90.6 %)
+#????????????????????????????????????????????????????????
+#The 95 % is a measure of the total variance in 
+#your data set that is explained by the clustering.
+#k-means minimises the within group dispersion (spread) of the samples,
+#the sum of squares. This maximises the between-group dispersion. 
+#By assigning the samples to k clusters rather than n (number of samples)
+#clusters achieved a reduction in sums of squares of 95 %.)
+#Percentage of variance explained is the ratio of the between-group
+#variance to the total variance, also known as an F-test.
+#A slight variation of this method plots the curvature of
+#the within group variance. Goodness of fit.
+
+print(wmeans$iter)
+#4
+?rand.index
+rand.index(wineRed_ds$quality,wmeans$cluster)
+#[1] 0.5869062
+######################################################################################################################
+# DATA SCALING
+wineRed_dsC <- scale(wineRed_dsC, center = FALSE)
+distC = dist(wineRed_dsC)
+######################################################################################################################
+
+#TEST NUMBER 1- Kmeans
+
+######################################################################################################################
+?kmeans
+?dist
+
+
+wmeans = kmeans (distC, 6, iter.max = 100, nstart=50)
+test1 = table(wineRed_ds$quality, wmeans$cluster)
+test1
+#     1   2   3   4   5   6
+# 3   5   0   2   1   0   2
+# 4  29   2   3   8  10   1
+# 5 175  19  75 187 149  76
+# 6 153   9 176 128 146  26
+# 7  26   3  97  20  43  10
+# 8   0   0  10   3   4   1
+
+accuracyCalc(test1,1)
+# 0.4890557
+
+print(wmeans)
+# K-means clustering with 6 clusters of sizes 388, 33, 363, 347, 352, 116
+# Within cluster sum of squares by cluster:
+# [1] 38905.41 41114.76 47228.19 57371.20 34034.69 41225.15
+# (between_SS / total_SS =  76.2 %)
+
+print(wmeans$iter)
+#4
+rand.index(wineRed_ds$quality,wmeans$cluster)
+#[1] 0.5919039
+######################################################################################################################
+
+#TEST NUMBER 2- Kmeans
+
+######################################################################################################################
+
+
+wmeans2 = kmeans (distC, 5, iter.max = 100, nstart=50)
+test2 = table(wineRed_ds$quality, wmeans2$cluster)
+test2
+#     1   2   3   4   5
+# 3   5   0   1   2   2
+# 4  37   2   7   2   5
+# 5 283  19 195  86  98
+# 6 253   9 146  28 202
+# 7  38   3  27  13 118
+# 8   3   0   3   1  11
+
+accuracyCalc(test2,1)
+# 0.4909318
+
+print(wmeans2)
+# Within cluster sum of squares by cluster:
+# [1] 77959.86 41114.76 63332.79 50075.51 61884.40
+# (between_SS / total_SS =  73.0 %)
+
+print(wmeans2$iter)
+#5
+rand.index(wineRed_ds$quality,wmeans2$cluster)
+# 0.5740799
+######################################################################################################################
+
+#TEST NUMBER 3- Kmeans
+
+######################################################################################################################
+
+
+wmeans3 = kmeans (distC, 7, iter.max = 100, nstart=50)
+test3 = table(wineRed_ds$quality, wmeans3$cluster)
+test3
+#     1   2   3   4   5   6   7
+# 3   0   0   0   2   2   1   5
+# 4   6   2   7   0   4   4  30
+# 5 161  14  96  35  57  99 219
+# 6 137   7 150  14 120  37 173
+# 7  23   2  60   6  71   9  28
+# 8   3   0   5   0   8   2   0
+
+accuracyCalc(test3,1)
+# 0.4990619
+
+print(wmeans3)
+# Within cluster sum of squares by cluster:
+# 42940.19 28289.80 29446.64 24037.55 35525.04 27726.28 46807.97
+# (between_SS / total_SS =  78.5 %)
+
+print(wmeans3$iter)
+#4
+rand.index(wineRed_ds$quality,wmeans3$cluster)
+# 0.5952242
+
+######################################################################################################################
+# DATA NORMALIZATION
+?scale
+wineRed_dsC <- scale(wineRed_dsC, center = TRUE, scale = TRUE)
+distC = dist(wineRed_dsC)
+######################################################################################################################
+
+######################################################################################################################
+
+#TEST NUMBER 4- Kmeans
+
+######################################################################################################################
+
+
+wmeans4 = kmeans (distC, 7, iter.max = 100, nstart=50)
+test4 = table(wineRed_ds$quality, wmeans4$cluster)
+test4
+#     1   2   3   4   5   6   7
+# 3   0   2   0   1   0   3   4
+# 4   4   4   2   3  20   3  17
+# 5  54  55  16 162 284  43  67
+# 6 151  91  10  52 213  31  90
+# 7  91  43   2   3  21  17  22
+# 8   9   4   0   0   0   3   2
+
+accuracyCalc(test4,1)
+# 0.5234522
+
+print(wmeans4)
+# Within cluster sum of squares by cluster:
+# 228707.9 169172.8 141331.1 170325.5 310271.3 254990.1 185719.6
+# (between_SS / total_SS =  71.8 %)
+
+
+print(wmeans4$iter)
+#5
+rand.index(wineRed_ds$quality,wmeans4$cluster)
+# 0.6091393
+
+######################################################################################################################
+
+#TEST NUMBER 5- Kmeans
+
+######################################################################################################################
+
+
+wmeans5 = kmeans (distC, 7, iter.max = 100, nstart=50, algorithm = "Forgy")
+test5 = table(wineRed_ds$quality, wmeans5$cluster)
+test5
+#     1   2   3   4   5   6   7
+# 3   0   3   4   0   1   2   0
+# 4   2   3  17  20   3   4   4
+# 5  16  43  67 284 162  55  54
+# 6  10  31  90 213  52  91 151
+# 7   2  17  22  21   3  43  91
+# 8   0   3   2   0   0   4   9
+
+accuracyCalc(test5,1)
+# 0.5234522
+
+print(wmeans5)
+# Within cluster sum of squares by cluster:
+# 141331.1 254990.1 185719.6 310271.3 170325.5 169172.8 228707.9
+# (between_SS / total_SS =  71.8 %)
+
+print(wmeans5$iter)
+#26
+rand.index(wineRed_ds$quality,wmeans5$cluster)
+# 0.6091393
+
+######################################################################################################################
+######################################################################################################################
+
+
+
+######################################################################################################################
+######################################################################################################################
+?eclust
+
+
+wss <- vector(mode = "integer" ,length = 10)
+
+#  1 to 10 clusters
+for (i in 1:10) {
+  kmeans.group <- kmeans(wineRed_dsC, centers = i, nstart=20)
+  # total within-cluster sum of squares
+  wss[i] <- kmeans.group$tot.withinss
+}
+
+# total within-cluster sum of squares per number of groups
+plot(1:10, wss, type = "b", 
+     xlab = "number of groups", 
+     ylab = "total within-cluster sum of squares")
+
+
+k2<-eclust(wineRed_dsC, "kmeans", k=2, graph=FALSE)
+fviz_silhouette(k2, palette="jco")
+#-----------------------------------------------
+silinfo<-k2$silinfo
+names(silinfo)
+
+#silhouette length for each observation
+head(silinfo$widths[,1:3],10)
+#silhouette length for each cluster
+silinfo$clus.avg.widths
+#average silhouette length
+silinfo$avg.width
+#------------------------------------------------
+# Rand index
+# The corrected Rand index provides a measure for assessing the similarity between
+# two partitions, adjusted for chance. Its range is -1 (no agreement) to 1 (perfect agreement).
+qualities <- as.numeric(wineRed_ds$quality)
+clust_stats<-cluster.stats(d=dist(wineRed_dsC), qualities, k2$cluster)
+clust_stats$corrected.rand
+rand.index(qualities,k2$cluster)
+k2$cluster
+adj.rand.index(qualities,k2$cluster)
+######################################################################################################################
+######################################################################################################################
+
+####################################
+# PAM - partitioning around medoids#
+# we use the objects near the center ma non il real center of the cluster to compute
+# distances
+####################################
+?fviz_nbclust# WOOOOOOOOOOOOOOOOOOOOOOOOOOOW
+# deciding on the optimal number of clusters
+fviz_nbclust(wineRed_dsC, pam, method = "silhouette")+theme_classic()
+
+# division into 2 clusters
+pam.res <- pam(wineRed_dsC, 2)
+
+# clustering results together with information on objects being cluster centers
+print(pam.res)
+
+#adding information on cluster assignment
+wine_clus<-cbind(wineRed_dsC, pam.res$cluster)
+head(wine_clus)
+
+#cluster centers
+print(pam.res$medoids)
+
+#cluster assignment
+pam.res$clustering
+
+#clustering visualization
+# fviz_cluster(pam.res,
+#              palette = c("#00AFBB", "#FC4E07"), # color palette
+#              ellipse.type = "t", # ellipse of concentration
+#              repel = TRUE, # avoid overlapping (slows down)
+#              ggtheme = theme_light() #background color
+# )
+
+
+######################################################################################################################
+######################################################################################################################
+
+?hclust
+#calculation of a distance matrix
+?dist
+distM = dist(wineRed_dsC)
+distT = as.matrix(distM)
+
+#dim(distT)
+
+#hierarchical clustering for different linkage methods
+complete <- hclust(distM, method="complete")
+
+single <- hclust(distM, method="single")
+
+avghc <- hclust(distM, method="average")
+
+centroid <- hclust(distM, method="centroid")
+
+#generates clusters
+?cutree
+clsr <- cutree(avghc, k=3)
+clsr
+
+#compare clusters with original class labels
+tab = table(wineRed_ds$quality, clsr)
+tab
+#     1   2   3
+# 3  10   0   0
+# 4  48   5   0
+# 5 497 184   0
+# 6 580  58   0
+# 7 184  13   2
+# 8  16   2   0
+######################################################################################################################
+######################################################################################################################
+
+
+
+######################################################################################################################
+######################################################################################################################
+
+dbscan::kNNdistplot(wineRed_dsC, k=5)
+abline(h=0.5, lty="dashed")
+
+# dbscan alg. execution
+
+DBSCANED <- dbscan(wineRed_dsC, eps=0.5, MinPts=5)
+
+#compare clusters with original class labels
+#cluster 0 means noise
+table(wineRed_ds$quality, DBSCANED$cluster)
+
+DBSCANED2 <- dbscan(wineRed_dsC, eps=0.4, MinPts=5)
+
+table(wineRed_ds$quality, DBSCANED2$cluster)
+
+# plot clusters
+plot(DBSCANED, wineRed_dsC)
+plot(DBSCANED, wineRed_dsC[c(1,4)])
+
+######################################################################################################################
+######################################################################################################################
+######################################################################################################################
+#               CONCLUSIONS
+######################################################################################################################
+######################################################################################################################
+######################################################################################################################
+
+

@@ -1,0 +1,1 @@
+Monte Carlo Calibration1We do not know the true (sampling) distribution of theteststatistic.2We can evaluate the distribution numerically using MonteCarlo simulation.3SimulateLdata sets underH0and compute theteststatisticfor each of theLdata sets.4A histogram of the simulated test statistics approximatesthe sampling distribution of the test statistic.
